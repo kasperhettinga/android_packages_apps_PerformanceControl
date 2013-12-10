@@ -72,6 +72,7 @@ public class BootService extends Service implements Constants {
             final String FASTCHARGE_PATH = Helpers.fastcharge_path();
             final String BLN_PATH = Helpers.bln_path();
             final String gov = preferences.getString(PREF_GOV, Helpers.readOneLine(GOVERNOR_PATH));
+            final int ncpus=Helpers.getNumOfCpus();
 
             if (preferences.getBoolean(CPU_SOB, false)) {
                 final String max = preferences.getString(
@@ -80,7 +81,7 @@ public class BootService extends Service implements Constants {
                         PREF_MIN_CPU, Helpers.readOneLine(MIN_FREQ_PATH));
                 final String io = preferences.getString(PREF_IO, Helpers.getIOScheduler());
 
-                for (int i = 0; i < Helpers.getNumOfCpus(); i++) {
+                for (int i = 0; i < ncpus; i++) {
                     sb.append("busybox echo ").append(max).append(" > ")
                             .append(MAX_FREQ_PATH.replace("cpu0", "cpu" + i)).append(";\n");
                     sb.append("busybox echo ").append(min).append(" > ")
@@ -114,7 +115,7 @@ public class BootService extends Service implements Constants {
                     if (Helpers.getVoltagePath().equals(VDD_PATH)) {
                         for (final Voltage volt : volts) {
                             if (!volt.getSavedMV().equals(volt.getCurrentMv())) {
-                                for (int i = 0; i < Helpers.getNumOfCpus(); i++) {
+                                for (int i = 0; i < ncpus; i++) {
                                     sb.append("busybox echo ").append(volt.getFreq())
                                             .append(" ").append(volt.getSavedMV())
                                             .append(" > ").append(Helpers.getVoltagePath()
@@ -128,7 +129,7 @@ public class BootService extends Service implements Constants {
                         for (final Voltage volt : volts) {
                             b.append(volt.getSavedMV()).append(" ");
                         }
-                        for (int i = 0; i < Helpers.getNumOfCpus(); i++) {
+                       for (int i = 0; i < ncpus; i++) {
                             sb.append("busybox echo ").append(b.toString()).append(" > ")
                                     .append(Helpers.getVoltagePath()
                                             .replace("cpu0", "cpu" + i)).append(";\n");
@@ -335,7 +336,15 @@ public class BootService extends Service implements Constants {
                             .append(" > ").append(KSM_SLEEP_PATH).append(";\n");
                 }
             }
-            for (int i = 0; i < Helpers.getNumOfCpus(); i++) {
+            if(new File("/sys/block/zram0").exists()){
+                if (preferences.getBoolean(ZRAM_SOB, false)){
+                    int curdisk = preferences.getInt(PREF_ZRAM,(int) Helpers.getTotMem()/2048);
+                    long v = (long)(curdisk/ncpus)*1024*1024;
+                    sb.append("zramstart ").append(ncpus).append(" ").append(v).append(";\n");
+                }
+            }
+
+            for (byte i = 0; i < ncpus; i++) {
                 sb.append("busybox echo ").append(gov).append(" > ")
                         .append(GOVERNOR_PATH.replace("cpu0", "cpu" + i)).append(";\n");
             }

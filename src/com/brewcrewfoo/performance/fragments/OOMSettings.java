@@ -51,6 +51,7 @@ import com.brewcrewfoo.performance.R;
 import com.brewcrewfoo.performance.activities.KSMActivity;
 import com.brewcrewfoo.performance.activities.PCSettings;
 import com.brewcrewfoo.performance.activities.PackActivity;
+import com.brewcrewfoo.performance.activities.ZramActivity;
 import com.brewcrewfoo.performance.util.CMDProcessor;
 import com.brewcrewfoo.performance.util.Constants;
 import com.brewcrewfoo.performance.util.Helpers;
@@ -92,6 +93,7 @@ public class OOMSettings extends PreferenceFragment
     private Preference mSysNames;
     private CheckBoxPreference mKSM;
     private Preference mKSMsettings;
+    private Preference mZRAMsettings;
 
     private Boolean ispm;
 
@@ -134,6 +136,8 @@ public class OOMSettings extends PreferenceFragment
         mKSM = (CheckBoxPreference) findPreference(PREF_RUN_KSM);
         mKSMsettings = findPreference("ksm_settings");
 
+        mZRAMsettings= findPreference("zram_settings");
+
         if (!new File(USER_PROC_PATH).exists()) {
             PreferenceCategory hideCat = (PreferenceCategory) findPreference("notkill_user_proc");
             getPreferenceScreen().removePreference(hideCat);
@@ -161,11 +165,14 @@ public class OOMSettings extends PreferenceFragment
         }
         ispm = (!Helpers.binExist("pm").equals(NOT_FOUND));
 
-        //CMDProcessor.CommandResult cr=new CMDProcessor().sh.runWaitFor(ISZRAM);
-        //if(!cr.success()||(cr.success()&&cr.stdout.equals(""))){
-        PreferenceCategory hideCat = (PreferenceCategory) findPreference("zram");
-        getPreferenceScreen().removePreference(hideCat);
-        //}
+        if(!new File(ZRAM_SYS).exists()) {
+            PreferenceCategory hideCat = (PreferenceCategory) findPreference("zram");
+            getPreferenceScreen().removePreference(hideCat);
+        } else {
+            int maxdisk = (int) Helpers.getTotMem() / 1024;
+            int curdisk = mPreferences.getInt(PREF_ZRAM,(int) maxdisk / 2);
+            mZRAMsettings.setSummary(getString(R.string.ps_zram) + " | " + getString(R.string.zram_disk_size,Helpers.ReadableByteCount(curdisk * 1024 * 1024)));
+        }
     }
 
     @Override
@@ -342,6 +349,8 @@ public class OOMSettings extends PreferenceFragment
             return true;
         } else if (preference.equals(mKSMsettings)) {
             startActivityForResult(new Intent(getActivity(), KSMActivity.class), 1);
+        } else if (preference.equals(mZRAMsettings)) {
+            startActivityForResult(new Intent(getActivity(), ZramActivity.class), 1);
         }
 
         return super.onPreferenceTreeClick(preferenceScreen, preference);
@@ -365,11 +374,18 @@ public class OOMSettings extends PreferenceFragment
         getActivity();
         if (requestCode == 1) {
             if (resultCode == Activity.RESULT_OK) {
-                final String r = data.getStringExtra("result");
+                final int r = data.getIntExtra("result",0);
                 Log.d(TAG, "input = " + r);
-                mKSMsettings.setSummary(getString(R.string.ksm_pagtoscan) + " " +
-                        r.split(":")[0] + " | " + getString(R.string.ksm_sleep) + " " +
-                        r.split(":")[1]);
+                switch(r){
+                    case 1:
+                        mKSMsettings.setSummary(getString(R.string.ksm_pagtoscan) + " " + Helpers.readOneLine(KSM_PAGESTOSCAN_PATH) + " | " + getString(R.string.ksm_sleep) + " " + Helpers.readOneLine(KSM_SLEEP_PATH));
+                        break;
+                    case 2:
+                        int maxdisk = (int) Helpers.getTotMem() / 1024;
+                        int curdisk = mPreferences.getInt(PREF_ZRAM,(int) maxdisk / 2);
+                        mZRAMsettings.setSummary(getString(R.string.ps_zram) + " | " + getString(R.string.zram_disk_size,Helpers.ReadableByteCount(curdisk * 1024 * 1024)));
+                        break;
+                }
             }
             //if (resultCode == Activity.RESULT_CANCELED) {}
         }

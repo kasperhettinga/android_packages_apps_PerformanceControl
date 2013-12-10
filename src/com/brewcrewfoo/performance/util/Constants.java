@@ -209,11 +209,14 @@ public interface Constants {
     //zRam
     public static final String ISZRAM = "busybox echo `busybox zcat /proc/config.gz | busybox grep ZRAM | busybox grep -v ^#'`";
     public static final String ZRAM_DEV = "/dev/block/zram0";
+    public static final String ZRAM_SYS = "/sys/block/zram0";
     public static final String ZRAM_SIZE_PATH = "/sys/block/zram0/disksize";
     public static final String ZRAM_RESET_PATH = "/sys/block/zram0/reset";
     public static final String ZRAM_COMPR_PATH = "/sys/block/zram0/compr_data_size";
     public static final String ZRAM_ORIG_PATH = "/sys/block/zram0/orig_data_size";
     public static final String ZRAM_MEMTOT_PATH = "/sys/block/zram0/mem_used_total";
+    public static final String PREF_ZRAM = "zram_size";
+    public static final String ZRAM_SOB = "zram_boot";
 
     // PC Settings
     public static final String PREF_USE_LIGHT_THEME = "use_light_theme";
